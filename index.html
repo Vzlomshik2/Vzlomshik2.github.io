@@ -12,7 +12,11 @@
 <body>
 <header class="topbar">
   <a class="brand" href="#"><span class="brand-mark">NTS</span><span><b>ENGINE PASSPORT</b><small>TECHNICAL RECORD SYSTEM</small></span></a>
-  <nav><a href="#lookup">Публичный поиск</a><a href="#cabinet">Кабинет</a></nav>
+  <nav>
+    <a href="#lookup">Публичный поиск</a>
+    <a href="#cabinet">Кабинет</a>
+    <a href="#account" id="navAccountBtn" hidden>Аккаунт</a>
+  </nav>
 </header>
 <main>
   <section class="hero">
@@ -38,11 +42,22 @@
     </div>
     <div id="workspace" hidden>
       <div class="toolbar"><div>Вы вошли как <b id="userEmail"></b> · роль: <b id="userRole"></b></div><button class="secondary" id="logoutBtn">Выйти</button></div>
-      <div class="tabs"><button class="tab active" data-tab="records">Паспорта</button><button class="tab" data-tab="new">Новый паспорт</button><button class="tab" data-tab="team" id="teamTab" hidden>Сотрудники</button></div>
+      
+      <div class="tabs">
+        <button class="tab active" data-tab="records">Паспорта</button>
+        <button class="tab" data-tab="queue" id="queueTab" hidden>В очереди</button>
+        <button class="tab" data-tab="new">Новый паспорт</button>
+        <button class="tab" data-tab="team" id="teamTab" hidden>Сотрудники</button>
+      </div>
+      
       <div id="recordsTab">
-        <div class="searchline compact"><input id="staffSearch" placeholder="Поиск по номеру, модели или заказу"><button id="staffSearchBtn" class="secondary">Искать</button></div>
+        <div class="searchline compact">
+          <input id="staffSearch" placeholder="Поиск по номеру, модели или заказу">
+          <button id="staffSearchBtn" class="secondary">Искать</button>
+        </div>
         <div id="recordsList" class="records-list"></div>
       </div>
+
       <div id="newTab" hidden>
         <form id="passportForm" class="form-grid">
           <label>Номер двигателя *<input name="engine_number" required placeholder="NTS-000001"></label>
@@ -53,19 +68,80 @@
           <label>Тип двигателя<select name="engine_type"><option>4Т одноцилиндровый</option><option>4Т двухцилиндровый</option><option>Другое</option></select></label>
           <label>Серийный номер двигателя<input name="serial_number"></label>
           <label>Номер заказа<input name="order_number" placeholder="NTS-2026-001"></label>
-          <label>Текущий статус<select name="status"><option value="MAINTENANCE">MAINTENANCE — обслуживание</option><option value="VERIFIED">ENGINE VERIFIED — проверен</option><option value="REBUILT">ENGINE REBUILT — капремонт</option></select></label>
+          <label>Текущий статус<select name="status"><option value="WAITING">ОЖИДАНИЕ — в очереди</option><option value="MAINTENANCE">MAINTENANCE — обслуживание</option><option value="VERIFIED">ENGINE VERIFIED — проверен</option><option value="REBUILT">ENGINE REBUILT — капремонт</option></select></label>
+          
+          <label>Дата приёма<input name="intake_date" type="date"></label>
+          <label>Дата выдачи<input name="issue_date" type="date"></label>
+          <label>Статус выдачи
+            <select name="is_issued">
+              <option value="false">Не выдан клиенту</option>
+              <option value="true">Выдан клиенту</option>
+            </select>
+          </label>
+          
+          <label class="wide">Закрепленный механик (ФИО)<input name="mechanic_name" placeholder="Иванов И.И. (оставьте пустым, если в очереди)"></label>
+          <label class="wide" id="returnToQueueContainer" hidden>
+            <label style="display:flex; flex-direction:row; align-items:center; gap:8px; cursor:pointer;">
+              <input type="checkbox" name="return_to_queue" style="width:auto; min-width:auto; margin:0;"> Открепить механика и вернуть в очередь
+            </label>
+          </label>
+
           <label class="wide">Краткое описание / конфигурация<textarea name="description" rows="3"></textarea></label>
           <label class="wide">Выполненные работы / публичная история<textarea name="public_summary" rows="3" placeholder="Работы, даты, результаты измерений, заменённые детали"></textarea></label>
           <label class="wide">Фотографии двигателя и работ<input name="photos" type="file" accept="image/*" multiple></label>
           <div class="wide hint">Фотографии будут загружены в хранилище. Не добавляйте лица, документы, адреса и личные данные без согласия владельца.</div>
-          <div class="wide"><button type="submit">Создать паспорт</button><span id="formMessage" class="hint"></span></div>
+          
+          <div class="wide" style="display:flex; gap:15px; align-items:center;">
+            <button type="submit">Сохранить</button>
+            <span id="formMessage" class="hint"></span>
+          </div>
+          <div class="wide" id="deletePassportContainer" hidden style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--line);">
+            <button type="button" class="secondary" style="background:var(--danger); color:#101317;" onclick="window.NTS.deletePassportFromForm()">Удалить паспорт</button>
+          </div>
         </form>
       </div>
+
       <div id="teamTabContent" hidden>
-        <p class="hint">Создание пользователей выполняется в Supabase Auth администратором. Здесь можно назначить им роль после создания аккаунта.</p>
-        <div class="searchline compact"><input id="staffId" placeholder="User ID (UUID)"><select id="staffRole"><option value="mechanic">mechanic</option><option value="quality">quality</option><option value="admin">admin</option></select><button id="assignRoleBtn">Назначить роль</button></div>
-        <div id="teamMessage" class="hint"></div>
+        <h3 style="margin-bottom:10px;">Создать нового сотрудника</h3>
+        <form id="createUserForm" class="searchline compact" style="flex-wrap: wrap; gap: 10px;">
+          <input id="newUserEmail" type="email" placeholder="Email" required style="flex:1; min-width:150px;">
+          <input id="newUserPassword" type="password" placeholder="Пароль (мин. 6 симв.)" required style="flex:1; min-width:150px;">
+          <input id="newUserName" placeholder="ФИО / Имя" required style="flex:1; min-width:150px;">
+          <select id="newUserRole" style="flex:1; min-width:100px;">
+            <option value="mechanic">mechanic</option>
+            <option value="quality">quality</option>
+            <option value="admin">admin</option>
+          </select>
+          <button type="submit" id="createUserBtn">Создать</button>
+        </form>
+        <div id="teamMessage" class="hint" style="margin-top:10px; margin-bottom: 20px;"></div>
+
+        <!-- Список пользователей -->
+        <h3 style="margin-bottom:10px; border-top: 1px solid var(--line); padding-top: 20px;">Список сотрудников</h3>
+        <div id="staffList" class="records-list"></div>
       </div>
+    </div>
+  </section>
+
+  <section class="panel" id="account" hidden>
+    <div class="section-head">
+      <div><div class="eyebrow">STAFF PROFILE</div><h2>Личный аккаунт</h2></div>
+      <button class="secondary" onclick="document.getElementById('account').hidden=true; document.getElementById('cabinet').hidden=false; document.getElementById('cabinet').scrollIntoView({behavior: 'smooth'});">Назад в кабинет</button>
+    </div>
+    
+    <div style="max-width: 500px; margin: 0 auto; padding-top: 20px;">
+      <form id="accountForm" class="form-grid">
+        <div class="wide" style="text-align: center;">
+          <img id="avatarPreview" src="https://via.placeholder.com/150/101317/d6ff3f?text=NTS" alt="Аватар" style="width: 140px; height: 140px; border-radius: 50%; object-fit: cover; border: 2px solid var(--line); margin-bottom: 15px;">
+        </div>
+        <label class="wide">Загрузить аватар<input type="file" id="avatarFile" accept="image/*"></label>
+        <label class="wide">Ваше имя (Отображается в системе)<input type="text" id="accountName" required></label>
+        <label class="wide">Портфолио / О себе<textarea id="accountPortfolio" rows="5" placeholder="Ваши навыки, выполненные работы, ссылки..."></textarea></label>
+        <div class="wide">
+          <button type="submit" class="primary">Сохранить профиль</button>
+          <span id="accountMsg" class="hint" style="margin-left: 15px;"></span>
+        </div>
+      </form>
     </div>
   </section>
 </main>
