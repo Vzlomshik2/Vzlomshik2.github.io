@@ -71,6 +71,9 @@
     const issueDate = p.issue_date ? new Date(p.issue_date).toLocaleDateString("ru-RU") : "—";
     const isIssuedText = p.is_issued ? "Выдан клиенту" : "В работе / Не выдан";
     const issuedColor = p.is_issued ? "var(--accent)" : "var(--muted)";
+    
+    // Проверяем, закреплен ли этот мотор за текущим механиком
+    const isAssignedMechanic = p.mechanic_id === state.user?.id;
 
     target.innerHTML=`<div class="passport"><div class="section-head"><div><div class="eyebrow">NTS ENGINE PASSPORT</div><h3>${esc(p.engine_number)}</h3></div><span class="status">${esc(statusName(p.status))}</span></div>
       <div class="passport-grid">${[
@@ -90,9 +93,15 @@
       
       ${staff?`<div class="toolbar" style="flex-wrap:wrap; gap:10px;">
         <button class="secondary" onclick="window.NTS.loadRecords(document.getElementById('staffSearch').value.trim(), document.querySelector('.tab.active').dataset.tab)">Закрыть</button>
+        
         ${(!p.mechanic_id && (state.role === 'mechanic' || state.role === 'admin')) ? 
           `<button class="secondary" onclick="window.NTS.takeJob('${esc(p.id)}')" style="background:var(--accent); color:#101317;">Взять в работу</button>` : ''
         }
+
+        ${(isAssignedMechanic && p.status === 'MAINTENANCE') ? 
+          `<button class="secondary" onclick="window.NTS.finishJob('${esc(p.id)}')" style="background:var(--electric-blue); color:#101317;">Закончить работу</button>` : ''
+        }
+
         <button class="secondary" onclick="window.NTS.editPassport('${esc(p.id)}')">Редактировать</button>
         <button class="secondary" onclick="window.NTS.downloadPdf('${esc(p.id)}')">Скачать PDF</button>
         <button class="secondary" onclick="window.NTS.changeStatus('${esc(p.id)}')">Изменить статус</button>
@@ -167,7 +176,11 @@
     state.role=profile.role;
     $("loginBox").hidden=true;$("workspace").hidden=false;$("sessionTag").textContent="Авторизован";
     $("userEmail").textContent=profile.display_name||state.user.email;$("userRole").textContent=state.role;
-    $("teamTab").hidden=state.role!=="admin";
+    
+    // ЖЕСТКО СКРЫВАЕМ ВКЛАДКУ СОТРУДНИКИ ДЛЯ ВСЕХ, КРОМЕ АДМИНА
+    $("teamTab").hidden = state.role !== "admin";
+    $("teamTabContent").hidden = true; 
+    
     $("navAccountBtn").hidden = false;
     
     if (state.role === 'mechanic') {
@@ -194,6 +207,24 @@
         const activeTab = document.querySelector('.tab.active').dataset.tab;
         await loadRecords($("staffSearch").value.trim(), activeTab);
         $("recordsList").innerHTML = "<p class='muted'>Мотор передан в ваше портфолио. Перейдите во вкладку 'Мои работы'.</p>";
+    }
+  }
+
+  // НОВАЯ ФУНКЦИЯ: Завершение работы механиком
+  async function finishJob(id) {
+    if (!confirm("Закончить работу над этим мотором? Статус изменится на 'NTS ENGINE VERIFIED', а контроль качества будет отмечен автоматически.")) return;
+    
+    const { error } = await state.client.from("engine_passports").update({
+        status: 'VERIFIED',
+        quality_approved_at: new Date().toISOString(),
+        quality_approved_by: state.user.id
+    }).eq("id", id);
+
+    if (error) {
+        alert("Ошибка завершения: " + error.message);
+    } else {
+        alert("Работа завершена! Статус изменен на VERIFIED.");
+        await openRecord(id);
     }
   }
 
@@ -311,6 +342,8 @@
   // --- СОТРУДНИКИ ---
   async function createUser(ev) {
     ev.preventDefault();
+    if (state.role !== 'admin') return; // Блокировка на уровне клиента
+
     const email = $("newUserEmail").value.trim();
     const password = $("newUserPassword").value;
     const name = $("newUserName").value.trim();
@@ -327,12 +360,13 @@
     } else {
       msg($("teamMessage"), "Пользователь успешно создан!", false);
       $("createUserForm").reset();
-      await loadStaffList(); // Обновляем список после создания
+      await loadStaffList(); 
     }
   }
 
-  // НОВАЯ ФУНКЦИЯ: Загрузка списка сотрудников
   async function loadStaffList() {
+    if (state.role !== 'admin') return; // Блокировка на уровне клиента
+
     const { data, error } = await state.client.rpc('get_all_staff');
     
     if (error) {
@@ -347,7 +381,7 @@
           <span style="color: var(--muted); font-size: 12px; margin-left: 10px;">${esc(u.email)}</span>
         </div>
         <div style="display: flex; gap: 8px; align-items: center;">
-          <select onchange="window.NTS.updateUserRole('${esc(u.user_id)}', this.value)" style="padding: 4px; font-size: 12px; width: auto; background: #101317; border: 1px solid var(--line); color: var(--text); border-radius: 3px;">
+          <select onchange="window.NTS.updateUserRole('${esc(u.user_id)}', this.value)" style="padding: 4px; font-size: 12px; width: auto; background: #101820; border: 1px solid var(--line); color: var(--text); border-radius: 2px;">
             <option value="mechanic" ${u.role === 'mechanic' ? 'selected' : ''}>Механик</option>
             <option value="quality" ${u.role === 'quality' ? 'selected' : ''}>ОТК</option>
             <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Админ</option>
@@ -357,12 +391,13 @@
     `).join("") || "<p class='muted'>Сотрудников пока нет.</p>";
   }
 
-  // НОВАЯ ФУНКЦИЯ: Обновление роли пользователя
   async function updateUserRole(userId, newRole) {
+    if (state.role !== 'admin') return; // Блокировка на уровне клиента
+
     const { error } = await state.client.from('staff_roles').update({ role: newRole }).eq('user_id', userId);
     if (error) {
       alert("Ошибка обновления роли: " + error.message);
-      await loadStaffList(); // Откатываем селект обратно
+      await loadStaffList(); 
     } else {
       alert("Роль обновлена.");
     }
@@ -500,7 +535,7 @@
   }
 
   window.NTS={
-    openRecord, loadRecords, changeStatus, editPassport, takeJob, deletePassportFromForm, updateUserRole,
+    openRecord, loadRecords, changeStatus, editPassport, takeJob, finishJob, deletePassportFromForm, updateUserRole,
     async downloadPdf(id){try{await pdfForData(await getPassport(id),"NTS-"+id+".pdf");}catch(e){alert(e.message);}},
     async publicPdf(n){const {data,error}=await state.client.rpc("public_engine_passport",{p_engine_number:n});if(error||!data?.passport){alert("Паспорт не найден");return;}pdfForData(data,n+".pdf");}
   };
@@ -523,6 +558,9 @@
     document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("active",x===b));
     const tab = b.dataset.tab;
     
+    // Защита: не даем механику открыть вкладку team даже через консоль
+    if (tab === "team" && state.role !== "admin") return;
+
     $("recordsTab").hidden = tab !== "records" && tab !== "queue";
     $("newTab").hidden = tab !== "new";
     $("teamTabContent").hidden = tab !== "team";
@@ -530,7 +568,7 @@
     if (tab === "records" || tab === "queue") {
         loadRecords($("staffSearch").value.trim(), tab);
     } else if (tab === "team") {
-        loadStaffList(); // Загружаем список при переходе на вкладку
+        loadStaffList(); 
     }
     
     if (tab === 'new' && !state.editingPassportId) {

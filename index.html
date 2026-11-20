@@ -3,21 +3,29 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="theme-color" content="#101317">
+  <meta name="theme-color" content="#101820">
   <title>NTS ENGINE PASSPORT</title>
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="favicon.png">
+
   <link rel="stylesheet" href="style.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 </head>
 <body>
 <header class="topbar">
-  <a class="brand" href="#"><span class="brand-mark">NTS</span><span><b>ENGINE PASSPORT</b><small>TECHNICAL RECORD SYSTEM</small></span></a>
+  <!-- Оригинальный логотип -->
+  <a class="brand" href="#">
+    <img src="logo.png" alt="NTS SERVICE" class="brand-logo">
+  </a>
   <nav>
     <a href="#lookup">Публичный поиск</a>
     <a href="#cabinet">Кабинет</a>
     <a href="#account" id="navAccountBtn" hidden>Аккаунт</a>
   </nav>
 </header>
+
 <main>
   <section class="hero">
     <div class="eyebrow">NTS SERVICE · NTS QUALITY</div>
@@ -41,7 +49,7 @@
       <p class="hint">Аккаунты создаёт администратор. Публичной регистрации нет.</p>
     </div>
     <div id="workspace" hidden>
-      <div class="toolbar"><div>Вы вошли как <b id="userEmail"></b> · роль: <b id="userRole"></b></div><button class="secondary" id="logoutBtn">Выйти</button></div>
+      <div class="toolbar"><div>Вы вошли как <b id="userEmail"></b> · роль: <b id="userRole" class="mono"></b></div><button class="secondary" id="logoutBtn">Выйти</button></div>
       
       <div class="tabs">
         <button class="tab active" data-tab="records">Паспорта</button>
@@ -60,18 +68,18 @@
 
       <div id="newTab" hidden>
         <form id="passportForm" class="form-grid">
-          <label>Номер двигателя *<input name="engine_number" required placeholder="NTS-000001"></label>
+          <label>Номер двигателя *<input name="engine_number" class="mono" required placeholder="NTS-000001"></label>
           <label>Модель / семейство двигателя *<input name="engine_model" required placeholder="Например, Yamaha YZ250F"></label>
           <label>Марка техники<input name="vehicle_brand"></label>
           <label>Модель техники<input name="vehicle_model"></label>
-          <label>Год выпуска<input name="year" type="number" min="1950" max="2100"></label>
+          <label>Год выпуска<input name="year" class="mono" type="number" min="1950" max="2100"></label>
           <label>Тип двигателя<select name="engine_type"><option>4Т одноцилиндровый</option><option>4Т двухцилиндровый</option><option>Другое</option></select></label>
-          <label>Серийный номер двигателя<input name="serial_number"></label>
-          <label>Номер заказа<input name="order_number" placeholder="NTS-2026-001"></label>
-          <label>Текущий статус<select name="status"><option value="WAITING">ОЖИДАНИЕ — в очереди</option><option value="MAINTENANCE">MAINTENANCE — обслуживание</option><option value="VERIFIED">ENGINE VERIFIED — проверен</option><option value="REBUILT">ENGINE REBUILT — капремонт</option></select></label>
+          <label>Серийный номер двигателя<input name="serial_number" class="mono"></label>
+          <label>Номер заказа<input name="order_number" class="mono" placeholder="NTS-2026-001"></label>
+          <label>Текущий статус<select name="status" class="mono"><option value="WAITING">WAITING (В очереди)</option><option value="MAINTENANCE">MAINTENANCE (Обслуживание)</option><option value="VERIFIED">VERIFIED (Проверен)</option><option value="REBUILT">REBUILT (Капремонт)</option></select></label>
           
-          <label>Дата приёма<input name="intake_date" type="date"></label>
-          <label>Дата выдачи<input name="issue_date" type="date"></label>
+          <label>Дата приёма<input name="intake_date" class="mono" type="date"></label>
+          <label>Дата выдачи<input name="issue_date" class="mono" type="date"></label>
           <label>Статус выдачи
             <select name="is_issued">
               <option value="false">Не выдан клиенту</option>
@@ -116,7 +124,6 @@
         </form>
         <div id="teamMessage" class="hint" style="margin-top:10px; margin-bottom: 20px;"></div>
 
-        <!-- Список пользователей -->
         <h3 style="margin-bottom:10px; border-top: 1px solid var(--line); padding-top: 20px;">Список сотрудников</h3>
         <div id="staffList" class="records-list"></div>
       </div>
@@ -132,7 +139,7 @@
     <div style="max-width: 500px; margin: 0 auto; padding-top: 20px;">
       <form id="accountForm" class="form-grid">
         <div class="wide" style="text-align: center;">
-          <img id="avatarPreview" src="https://via.placeholder.com/150/101317/d6ff3f?text=NTS" alt="Аватар" style="width: 140px; height: 140px; border-radius: 50%; object-fit: cover; border: 2px solid var(--line); margin-bottom: 15px;">
+          <img id="avatarPreview" src="https://via.placeholder.com/150/101820/00B8F0?text=NTS" alt="Аватар" style="width: 140px; height: 140px; border-radius: 50%; object-fit: cover; border: 2px solid var(--line); margin-bottom: 15px;">
         </div>
         <label class="wide">Загрузить аватар<input type="file" id="avatarFile" accept="image/*"></label>
         <label class="wide">Ваше имя (Отображается в системе)<input type="text" id="accountName" required></label>
@@ -145,7 +152,14 @@
     </div>
   </section>
 </main>
-<footer>NTS ENGINE PASSPORT · Документирование работ и контроль качества</footer>
+
+<footer>
+  <div class="footer-content">
+    <img src="logo.png" alt="NTS SERVICE" class="footer-logo">
+    <p>Современный специализированный моторный центр. <br>PRECISION. ENGINEERING. QUALITY.</p>
+  </div>
+</footer>
+
 <script src="config.js"></script>
 <script src="app.js"></script>
 </body></html>
