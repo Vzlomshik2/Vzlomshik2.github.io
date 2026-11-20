@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#101317">
+  <title>NTS ENGINE PASSPORT</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="#"><span class="brand-mark">NTS</span><span><b>ENGINE PASSPORT</b><small>TECHNICAL RECORD SYSTEM</small></span></a>
+  <nav><a href="#lookup">Публичный поиск</a><a href="#cabinet">Кабинет</a></nav>
+</header>
+<main>
+  <section class="hero">
+    <div class="eyebrow">NTS SERVICE · NTS QUALITY</div>
+    <h1>История и состояние<br><em>каждого двигателя.</em></h1>
+    <p>Единый цифровой паспорт: дефектовка, ремонт, фотографии, контроль качества и документы.</p>
+    <a class="primary" href="#lookup">Найти паспорт</a>
+  </section>
+
+  <section class="panel" id="lookup">
+    <div class="section-head"><div><div class="eyebrow">PUBLIC ACCESS</div><h2>Проверить двигатель</h2></div><span class="tag">Открытый реестр</span></div>
+    <div class="searchline"><input id="publicNumber" placeholder="Например, NTS-000001" autocomplete="off"><button id="searchBtn">Найти</button></div>
+    <div id="publicResult" class="result muted">Введите номер двигателя, чтобы открыть его паспорт.</div>
+  </section>
+
+  <section class="panel" id="cabinet">
+    <div class="section-head"><div><div class="eyebrow">STAFF ACCESS</div><h2>Рабочий кабинет</h2></div><span id="sessionTag" class="tag">Не авторизован</span></div>
+    <div id="loginBox" class="login-grid">
+      <label>Email<input id="email" type="email" placeholder="staff@nts-service.ru"></label>
+      <label>Пароль<input id="password" type="password" placeholder="Пароль"></label>
+      <button id="loginBtn">Войти</button>
+      <p class="hint">Аккаунты создаёт администратор. Публичной регистрации нет.</p>
+    </div>
+    <div id="workspace" hidden>
+      <div class="toolbar"><div>Вы вошли как <b id="userEmail"></b> · роль: <b id="userRole"></b></div><button class="secondary" id="logoutBtn">Выйти</button></div>
+      <div class="tabs"><button class="tab active" data-tab="records">Паспорта</button><button class="tab" data-tab="new">Новый паспорт</button><button class="tab" data-tab="team" id="teamTab" hidden>Сотрудники</button></div>
+      <div id="recordsTab">
+        <div class="searchline compact"><input id="staffSearch" placeholder="Поиск по номеру, модели или заказу"><button id="staffSearchBtn" class="secondary">Искать</button></div>
+        <div id="recordsList" class="records-list"></div>
+      </div>
+      <div id="newTab" hidden>
+        <form id="passportForm" class="form-grid">
+          <label>Номер двигателя *<input name="engine_number" required placeholder="NTS-000001"></label>
+          <label>Модель / семейство двигателя *<input name="engine_model" required placeholder="Например, Yamaha YZ250F"></label>
+          <label>Марка техники<input name="vehicle_brand"></label>
+          <label>Модель техники<input name="vehicle_model"></label>
+          <label>Год выпуска<input name="year" type="number" min="1950" max="2100"></label>
+          <label>Тип двигателя<select name="engine_type"><option>4Т одноцилиндровый</option><option>4Т двухцилиндровый</option><option>Другое</option></select></label>
+          <label>Серийный номер двигателя<input name="serial_number"></label>
+          <label>Номер заказа<input name="order_number" placeholder="NTS-2026-001"></label>
+          <label>Текущий статус<select name="status"><option value="MAINTENANCE">MAINTENANCE — обслуживание</option><option value="VERIFIED">ENGINE VERIFIED — проверен</option><option value="REBUILT">ENGINE REBUILT — капремонт</option></select></label>
+          <label class="wide">Краткое описание / конфигурация<textarea name="description" rows="3"></textarea></label>
+          <label class="wide">Выполненные работы / публичная история<textarea name="public_summary" rows="3" placeholder="Работы, даты, результаты измерений, заменённые детали"></textarea></label>
+          <label class="wide">Фотографии двигателя и работ<input name="photos" type="file" accept="image/*" multiple></label>
+          <div class="wide hint">Фотографии будут загружены в хранилище. Не добавляйте лица, документы, адреса и личные данные без согласия владельца.</div>
+          <div class="wide"><button type="submit">Создать паспорт</button><span id="formMessage" class="hint"></span></div>
+        </form>
+      </div>
+      <div id="teamTabContent" hidden>
+        <p class="hint">Создание пользователей выполняется в Supabase Auth администратором. Здесь можно назначить им роль после создания аккаунта.</p>
+        <div class="searchline compact"><input id="staffId" placeholder="User ID (UUID)"><select id="staffRole"><option value="mechanic">mechanic</option><option value="quality">quality</option><option value="admin">admin</option></select><button id="assignRoleBtn">Назначить роль</button></div>
+        <div id="teamMessage" class="hint"></div>
+      </div>
+    </div>
+  </section>
+</main>
+<footer>NTS ENGINE PASSPORT · Документирование работ и контроль качества</footer>
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body></html>
