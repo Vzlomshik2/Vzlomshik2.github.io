@@ -25,19 +25,32 @@
 
   function renderPassport(target,data,staff) {
     const p=data.passport || data, history=data.history || [], photos=data.photos || [];
+    
+    // Форматируем даты для отображения
+    const intakeDate = p.intake_date ? new Date(p.intake_date).toLocaleDateString("ru-RU") : "—";
+    const issueDate = p.issue_date ? new Date(p.issue_date).toLocaleDateString("ru-RU") : "—";
+    const isIssuedText = p.is_issued ? "Выдан клиенту" : "В работе / Не выдан";
+    const issuedColor = p.is_issued ? "var(--accent)" : "var(--muted)";
+
     target.innerHTML=`<div class="passport"><div class="section-head"><div><div class="eyebrow">NTS ENGINE PASSPORT</div><h3>${esc(p.engine_number)}</h3></div><span class="status">${esc(statusName(p.status))}</span></div>
       <div class="passport-grid">${[
-        ["Модель двигателя",p.engine_model],["Техника",`${p.vehicle_brand||""} ${p.vehicle_model||""}`.trim()],["Тип",p.engine_type],["Год",p.year],["Серийный номер",p.serial_number],["Номер заказа",p.order_number],["Дата создания",p.created_at?new Date(p.created_at).toLocaleDateString("ru-RU"):"—"],["Обновлён",p.updated_at?new Date(p.updated_at).toLocaleDateString("ru-RU"):"—"]
+        ["Модель двигателя",p.engine_model],["Техника",`${p.vehicle_brand||""} ${p.vehicle_model||""}`.trim()],["Тип",p.engine_type],["Год",p.year],["Серийный номер",p.serial_number],["Номер заказа",p.order_number],["Дата приёма",intakeDate],["Дата выдачи",issueDate]
       ].map(([k,v])=>`<div class="kv"><small>${esc(k)}</small>${esc(v||"—")}</div>`).join("")}</div>
+      
+      <div class="kv" style="margin-top:10px; border-color:${issuedColor}"><small>Статус выдачи</small><b style="color:${issuedColor}">${isIssuedText}</b></div>
+
       ${p.description?`<h4>Описание</h4><p>${esc(p.description)}</p>`:""}
       ${p.public_summary?`<h4>Работы и результаты</h4><p>${esc(p.public_summary)}</p>`:""}
       <h4>История обслуживания</h4>${history.length?history.map(h=>`<div class="history-item"><b>${esc(h.title)}</b><div>${esc(h.description||"")}</div><small>${esc(h.work_date||"")} · ${esc(h.order_number||"")}</small></div>`).join(""):"<p class='muted'>Записей пока нет.</p>"}
       ${photos.length?`<h4>Фотографии</h4><div class="photo-grid">${photos.map(ph=>`<a href="${esc(ph.url)}" target="_blank" rel="noopener"><img src="${esc(ph.url)}" alt="Фото двигателя"></a>`).join("")}</div>`:""}
-      ${staff?`<div class="toolbar">
+      
+      ${staff?`<div class="toolbar" style="flex-wrap:wrap; gap:10px;">
         <button class="secondary" onclick="window.NTS.editPassport('${esc(p.id)}')">Редактировать</button>
+        <button class="secondary" onclick="window.NTS.toggleIssued('${esc(p.id)}', ${!p.is_issued})" style="background:${issuedColor}; color:#101317;">${p.is_issued ? 'Отметить: Не выдан' : 'Отметить: Выдан'}</button>
         <button class="secondary" onclick="window.NTS.downloadPdf('${esc(p.id)}')">Скачать PDF</button>
         <button class="secondary" onclick="window.NTS.addHistory('${esc(p.id)}')">Добавить запись</button>
         <button class="secondary" onclick="window.NTS.changeStatus('${esc(p.id)}')">Изменить статус</button>
+        ${state.role === 'admin' ? `<button class="secondary" style="background:var(--danger); color:#101317; margin-left:auto;" onclick="window.NTS.deletePassport('${esc(p.id)}')">Удалить</button>` : ''}
       </div>`:`<button class="secondary" onclick="window.NTS.publicPdf('${esc(p.engine_number)}')">Скачать публичный PDF</button>`}
       </div>`;
   }
@@ -48,10 +61,10 @@
   }
 
   async function loadRecords(q="") {
-    const query=state.client.from("engine_passports").select("id,engine_number,engine_model,status,order_number,updated_at").order("updated_at",{ascending:false}).limit(100);
+    const query=state.client.from("engine_passports").select("id,engine_number,engine_model,status,order_number,updated_at,is_issued").order("updated_at",{ascending:false}).limit(100);
     const {data,error}=q?await query.or(`engine_number.ilike.%${q}%,engine_model.ilike.%${q}%,order_number.ilike.%${q}%`):await query;
     if(error){$("recordsList").textContent=error.message;return;}
-    $("recordsList").innerHTML=(data||[]).map(r=>`<div class="record"><div><h3>${esc(r.engine_number)}</h3><small>${esc(r.engine_model)} · ${esc(statusName(r.status))} · ${esc(r.order_number||"без заказа")}</small></div><button onclick="window.NTS.openRecord('${esc(r.id)}')">Открыть</button></div>`).join("")||"<p class='muted'>Паспортов пока нет.</p>";
+    $("recordsList").innerHTML=(data||[]).map(r=>`<div class="record"><div><h3>${esc(r.engine_number)}</h3><small>${esc(r.engine_model)} · ${esc(statusName(r.status))} · ${esc(r.order_number||"без заказа")} ${r.is_issued ? '· <b style="color:var(--accent)">Выдан</b>' : ''}</small></div><button onclick="window.NTS.openRecord('${esc(r.id)}')">Открыть</button></div>`).join("")||"<p class='muted'>Паспортов пока нет.</p>";
   }
 
   async function openRecord(id) { 
@@ -95,11 +108,8 @@
       const p = d.passport;
       
       state.editingPassportId = id; 
-
-      // Переключаемся на вкладку формы
       document.querySelector('.tab[data-tab="new"]').click();
 
-      // Заполняем форму
       const form = $("passportForm");
       form.elements.engine_number.value = p.engine_number || '';
       form.elements.engine_model.value = p.engine_model || '';
@@ -111,8 +121,10 @@
       form.elements.order_number.value = p.order_number || '';
       form.elements.description.value = p.description || '';
       form.elements.public_summary.value = p.public_summary || '';
+      form.elements.intake_date.value = p.intake_date || '';
+      form.elements.issue_date.value = p.issue_date || '';
+      form.elements.is_issued.value = String(p.is_issued);
 
-      // Блокируем смену статуса для механиков (согласно RLS)
       if (state.role === 'mechanic') {
         form.elements.status.value = p.status;
         form.elements.status.disabled = true;
@@ -135,10 +147,13 @@
     const v=Object.fromEntries(new FormData(f).entries());
     const photoFiles=[...f.elements.photos.files];
     delete v.photos;
-    v.year=v.year?Number(v.year):null;
+    
+    v.year = v.year ? Number(v.year) : null;
+    v.intake_date = v.intake_date ? v.intake_date : null;
+    v.issue_date = v.issue_date ? v.issue_date : null;
+    v.is_issued = v.is_issued === "true"; // Преобразуем строку в boolean
 
     if (state.editingPassportId) {
-      // РЕЖИМ РЕДАКТИРОВАНИЯ (UPDATE)
       delete v.engine_number; 
       
       const { error } = await state.client
@@ -169,7 +184,6 @@
       await loadRecords();
       
     } else {
-      // РЕЖИМ СОЗДАНИЯ (INSERT)
       const {data,error}=await state.client.from("engine_passports").insert(v).select("id").single();
       if(error){
         msg($("formMessage"),error.message,true);
@@ -184,6 +198,26 @@
         msg($("formMessage"),"Паспорт создан, но фото загрузить не удалось: "+e.message,true);
       }
     }
+  }
+
+  async function deletePassport(id) {
+    if (state.role !== 'admin') return alert("Только администратор может удалять паспорта.");
+    if (!confirm("Вы уверены, что хотите БЕЗВОЗВРАТНО удалить этот паспорт и всю его историю?")) return;
+    
+    const { error } = await state.client.from("engine_passports").delete().eq("id", id);
+    if (error) {
+      alert("Ошибка удаления: " + error.message);
+    } else {
+      alert("Паспорт удален.");
+      $("recordsList").innerHTML = "<p class='muted'>Паспорт удален. Выберите другой из списка.</p>";
+      await loadRecords();
+    }
+  }
+
+  async function toggleIssued(id, newStatus) {
+    const { error } = await state.client.from("engine_passports").update({ is_issued: newStatus }).eq("id", id);
+    if (error) alert(error.message);
+    else openRecord(id);
   }
 
   async function addHistory(id){
@@ -207,14 +241,12 @@
     const doc = new jsPDF();
     let y = 20;
 
-    // 1. Загрузка шрифтов с поддержкой кириллицы (Roboto Regular + Medium для жирного)
     try {
       const fontUrlRegular = 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.66/fonts/Roboto/Roboto-Regular.ttf';
       const fontUrlBold = 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.66/fonts/Roboto/Roboto-Medium.ttf';
       
       const loadFont = async (url) => {
         const res = await fetch(url);
-        if (!res.ok) throw new Error("Network response was not ok");
         const blob = await res.blob();
         return new Promise((resolve, reject) => {
           const reader = new FileReader();
@@ -229,16 +261,11 @@
 
       doc.addFileToVFS('Roboto-Regular.ttf', regularBase64);
       doc.addFont('Roboto-Regular.ttf', 'Roboto', 'normal');
-
       doc.addFileToVFS('Roboto-Medium.ttf', boldBase64);
       doc.addFont('Roboto-Medium.ttf', 'Roboto', 'bold');
-
       doc.setFont('Roboto', 'normal');
-    } catch (e) {
-      console.warn("Не удалось загрузить шрифты. Текст может быть некорректным.", e);
-    }
+    } catch (e) { console.warn(e); }
 
-    // --- Вспомогательные функции верстки ---
     const p = d.passport || d;
     const history = d.history || [];
 
@@ -307,8 +334,6 @@
       y += 5;
     };
 
-    // --- Генерация документа ---
-
     doc.setFont('Roboto', 'normal');
     doc.setFontSize(10);
     doc.setTextColor(150, 150, 150);
@@ -319,12 +344,18 @@
     y += 4;
     drawLine();
 
+    const intakeDate = p.intake_date ? new Date(p.intake_date).toLocaleDateString("ru-RU") : "—";
+    const issueDate = p.issue_date ? new Date(p.issue_date).toLocaleDateString("ru-RU") : "—";
+    const isIssuedText = p.is_issued ? "Выдан клиенту" : "В работе / Не выдан";
+
     drawKV("Номер двигателя", p.engine_number);
     drawKV("Номер заказа", p.order_number);
-    drawKV("Статус", statusName(p.status));
+    drawKV("Статус ремонта", statusName(p.status));
+    drawKV("Статус выдачи", isIssuedText);
     drawKV("Модель, номер на картере", `${p.engine_model} / ${p.serial_number || '—'}`);
     drawKV("Техника (марка, год)", `${p.vehicle_brand || ''} ${p.vehicle_model || ''} (${p.year || '—'})`);
-    drawKV("Дата приёма / выдачи", p.created_at ? new Date(p.created_at).toLocaleDateString("ru-RU") : "—");
+    drawKV("Дата приёма", intakeDate);
+    drawKV("Дата выдачи", issueDate);
     drawKV("Клиент, контакт", "Данные скрыты или не заполнены");
     
     y += 5;
@@ -412,6 +443,8 @@
     addHistory,
     changeStatus,
     editPassport,
+    deletePassport,
+    toggleIssued,
     async downloadPdf(id){try{await pdfForData(await getPassport(id),"NTS-"+id+".pdf");}catch(e){alert(e.message);}},
     async publicPdf(n){const {data,error}=await state.client.rpc("public_engine_passport",{p_engine_number:n});if(error||!data?.passport){alert("Паспорт не найден");return;}pdfForData(data,n+".pdf");}
   };
@@ -429,7 +462,6 @@
     $("newTab").hidden=b.dataset.tab!=="new";
     $("teamTabContent").hidden=b.dataset.tab!=="team";
 
-    // СБРОС ФОРМЫ, если переключились на "Новый паспорт" и до этого что-то редактировали
     if (b.dataset.tab === 'new' && !state.editingPassportId) {
       const form = $("passportForm");
       form.reset();
@@ -437,7 +469,6 @@
       form.querySelector('button[type="submit"]').textContent = "Создать паспорт";
       msg($("formMessage"), ""); 
     }
-    // Если ушли с вкладки, отменяем режим редактирования
     if (b.dataset.tab !== 'new') {
       state.editingPassportId = null;
     }
