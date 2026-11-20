@@ -1,12 +1,11 @@
 /* БРЕНДБУК NTS SERVICE: INDUSTRIAL / ENGINEERING */
 :root {
-  /* Цветовая гамма взята с фото логотипа */
-  --brand-blue: #5A8EBC;      /* Тот самый синий с логотипа */
-  --brand-blue-hover: #4A7BA7; /* Чуть темнее для эффекта наведения */
+  --brand-blue: #5A8EBC;
+  --brand-blue-hover: #4A7BA7;
   
-  --graphite: #101820;        /* Темный фон */
-  --steel-grey: #8997A3;      /* Серый для текста */
-  --white: #F3F6F8;           /* Белый */
+  --graphite: #101820;
+  --steel-grey: #8997A3;
+  --white: #F3F6F8;
   
   --bg: var(--graphite);
   --panel: #16212b;
@@ -63,10 +62,9 @@ h1, h2, h3, h4, .eyebrow, .brand b, button, .primary {
 }
 
 .brand-logo {
-  height: 42px; /* Идеальная высота */
+  height: 42px;
   width: auto;  
   object-fit: contain;
-  /* Убрали все фильтры, чтобы логотип был в родном цвете */
 }
 
 .topbar nav { display: flex; gap: 24px; }
@@ -82,7 +80,7 @@ h1, h2, h3, h4, .eyebrow, .brand b, button, .primary {
 /* --- HERO --- */
 .hero {
   padding: 82px max(7vw, 22px) 72px;
-  background: radial-gradient(ellipse at 80% 15%, rgba(90, 142, 188, 0.15) 0, transparent 50%); /* Подстроили свечение под новый цвет */
+  background: radial-gradient(ellipse at 80% 15%, rgba(90, 142, 188, 0.15) 0, transparent 50%);
 }
 .eyebrow {
   font-size: 13px;
@@ -141,7 +139,7 @@ input, select, textarea {
   border-radius: 2px;
   width: 100%;
   font-family: 'DejaVu Sans', Arial, sans-serif;
-  font-size: 14px;
+  font-size: 15px;
 }
 input:focus, textarea:focus, select:focus { outline: 1px solid var(--accent); border-color: var(--accent); }
 
@@ -154,7 +152,7 @@ label { display: flex; flex-direction: column; gap: 8px; color: var(--steel-grey
 .login-grid .hint { grid-column: 1/-1; font-size: 12px; }
 .toolbar { display: flex; justify-content: space-between; align-items: center; gap: 15px; padding: 14px 0; border-bottom: 1px solid var(--line); margin-bottom: 15px; }
 
-.tabs { display: flex; gap: 8px; margin: 18px 0; }
+.tabs { display: flex; gap: 8px; margin: 18px 0; flex-wrap: wrap; }
 .tab { background: transparent; border: 1px solid var(--line); color: var(--muted); padding: 10px 16px; border-radius: 2px; }
 .tab.active { background: var(--accent); color: var(--graphite); border-color: var(--accent); }
 
@@ -199,24 +197,86 @@ footer {
 .footer-logo:hover { opacity: 1; }
 footer p { font-size: 12px; margin: 0; font-family: 'DejaVu Sans', Arial, sans-serif; line-height: 1.5; }
 
-/* --- RESPONSIVE --- */
+
+/* ========================================================= */
+/* ================= АДАПТАЦИЯ ПОД УСТРОЙСТВА ============== */
+/* ========================================================= */
+
+/* --- Планшеты и небольшие ноутбуки (до 992px) --- */
+@media (max-width: 992px) {
+  .hero { padding: 60px 20px; }
+  .hero h1 { font-size: 48px; }
+  .login-grid { grid-template-columns: 1fr 1fr; }
+  .login-grid button { grid-column: 1 / -1; }
+}
+
+/* --- Смартфоны в портретном режиме (до 768px) --- */
 @media (max-width: 768px) {
+  /* Шапка */
   .topbar { height: auto; padding: 15px 20px; flex-direction: column; gap: 15px; }
-  .brand-logo { height: 38px; }
-  .topbar nav { width: 100%; justify-content: space-between; gap: 10px; }
-  .topbar nav a { font-size: 12px; }
+  .brand-logo { height: 48px; } /* Чуть увеличили логотип для мобильных */
+  .topbar nav { width: 100%; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+  .topbar nav a { font-size: 14px; padding: 5px 0; }
   
-  .hero { padding-top: 50px; padding-bottom: 40px; }
-  .hero h1 { font-size: 32px; }
+  /* Главный экран */
+  .hero { padding: 40px 20px; text-align: center; }
+  .hero h1 { font-size: clamp(32px, 9vw, 42px); }
+  .hero p { margin: 0 auto 25px auto; font-size: 15px; }
   
-  .panel { padding: 20px; width: calc(100% - 20px); margin: 15px auto; }
-  .login-grid, .form-grid, .passport-grid { grid-template-columns: 1fr; }
-  .login-grid .hint, .wide { grid-column: auto; }
+  /* Панели (убираем отступы по бокам) */
+  .panel { padding: 20px; width: 100%; border-radius: 0; border-left: none; border-right: none; margin: 15px 0; }
+  .section-head { flex-direction: column; align-items: flex-start; gap: 10px; margin-bottom: 20px; }
   
-  .section-head { align-items: flex-start; flex-direction: column; gap: 10px; }
-  .record { align-items: flex-start; flex-direction: column; }
+  /* Сетки в одну колонку */
+  .form-grid, .passport-grid { grid-template-columns: 1fr; gap: 15px; }
+  .wide { grid-column: auto; }
+  .login-grid { grid-template-columns: 1fr; gap: 15px; }
+  
+  /* Формы: 16px защищает от автозума на iPhone */
+  input, select, textarea { font-size: 16px; padding: 14px; }
+  
+  /* Кнопки */
+  button, .primary { padding: 14px 20px; font-size: 16px; width: 100%; }
+  .searchline { flex-direction: column; gap: 10px; }
+  .searchline button { width: 100%; }
+  
+  /* Карточки паспортов и списки */
+  .record { flex-direction: column; align-items: stretch; gap: 15px; }
   .record button { width: 100%; }
-  .searchline { flex-direction: column; }
-  .toolbar { align-items: flex-start; flex-direction: column; }
+  .record > div:last-child { flex-direction: column; gap: 10px; width: 100%; }
+  
+  /* Панель инструментов в паспорте (кнопки в столбик) */
+  .toolbar { flex-direction: column; align-items: stretch; gap: 10px; }
   .toolbar .secondary { width: 100%; margin-left: 0 !important; }
+  
+  /* Фотографии */
+  .photo-grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; }
+  .photo-grid img { height: 100px; }
+  
+  /* Вкладки */
+  .tabs { flex-wrap: wrap; }
+  .tab { flex: 1 1 auto; text-align: center; }
+  
+  /* Подвал */
+  footer { padding: 30px 15px; }
+}
+
+/* --- Очень маленькие смартфоны (до 480px, напр. iPhone SE) --- */
+@media (max-width: 480px) {
+  .topbar nav { gap: 5px; justify-content: center; flex-direction: row; flex-wrap: wrap; }
+  .topbar nav a { font-size: 12px; margin: 0 5px; }
+  .brand-logo { height: 40px; }
+  
+  .hero h1 { font-size: 28px; }
+  
+  .panel { padding: 15px; }
+  .section-head h2 { font-size: 22px; }
+  
+  /* Уменьшаем размер шрифта в технических данных, чтобы не переносилось */
+  .kv small { font-size: 9px; }
+  .record h3 { font-size: 14px; }
+  .record small { font-size: 12px; }
+  
+  /* Кнопки делаем чуть меньше по высоте */
+  button, .primary { padding: 12px 15px; font-size: 14px; }
 }
