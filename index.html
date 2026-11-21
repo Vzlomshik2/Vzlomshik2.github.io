@@ -6,16 +6,13 @@
   <meta name="theme-color" content="#101820">
   <title>NTS ENGINE PASSPORT</title>
   
-  <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png">
-
   <link rel="stylesheet" href="style.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 </head>
 <body>
 <header class="topbar">
-  <!-- Оригинальный логотип -->
   <a class="brand" href="#">
     <img src="logo.png" alt="NTS SERVICE" class="brand-logo">
   </a>
@@ -94,8 +91,11 @@
             </label>
           </label>
 
-          <label class="wide">Краткое описание / конфигурация<textarea name="description" rows="3"></textarea></label>
-          <label class="wide">Выполненные работы / публичная история<textarea name="public_summary" rows="3" placeholder="Работы, даты, результаты измерений, заменённые детали"></textarea></label>
+          <!-- ИЗМЕНЕНО: Описание -> Дефект -->
+          <label class="wide">Дефект / Описание<textarea name="description" rows="3"></textarea></label>
+          <!-- ИЗМЕНЕНО: Работы и результаты -> Проведённые работы -->
+          <label class="wide">Проведённые работы / история<textarea name="public_summary" rows="3" placeholder="Работы, даты, результаты измерений, заменённые детали"></textarea></label>
+          
           <label class="wide">Фотографии двигателя и работ<input name="photos" type="file" accept="image/*" multiple></label>
           <div class="wide hint">Фотографии будут загружены в хранилище. Не добавляйте лица, документы, адреса и личные данные без согласия владельца.</div>
           

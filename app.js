@@ -72,7 +72,6 @@
     const isIssuedText = p.is_issued ? "Выдан клиенту" : "В работе / Не выдан";
     const issuedColor = p.is_issued ? "var(--accent)" : "var(--muted)";
     
-    // Проверяем, закреплен ли этот мотор за текущим механиком
     const isAssignedMechanic = p.mechanic_id === state.user?.id;
 
     target.innerHTML=`<div class="passport"><div class="section-head"><div><div class="eyebrow">NTS ENGINE PASSPORT</div><h3>${esc(p.engine_number)}</h3></div><span class="status">${esc(statusName(p.status))}</span></div>
@@ -82,8 +81,10 @@
       
       <div class="kv" style="margin-top:10px; border-color:${issuedColor}"><small>Статус выдачи</small><b style="color:${issuedColor}">${isIssuedText}</b></div>
 
-      ${p.description?`<h4>Описание</h4><p>${esc(p.description)}</p>`:""}
-      ${p.public_summary?`<h4>Работы и результаты</h4><p>${esc(p.public_summary)}</p>`:""}
+      <!-- ИЗМЕНЕНО: Описание -> Дефект, Работы и результаты -> Проведённые работы -->
+      ${p.description?`<h4>Дефект</h4><p>${esc(p.description)}</p>`:""}
+      ${p.public_summary?`<h4>Проведённые работы</h4><p>${esc(p.public_summary)}</p>`:""}
+      
       <h4>История обслуживания</h4>${history.length?history.map(h=>`<div class="history-item"><b>${esc(h.title)}</b><div>${esc(h.description||"")}</div><small>${esc(h.work_date||"")} · ${esc(h.order_number||"")}</small></div>`).join(""):"<p class='muted'>Записей пока нет.</p>"}
       
       ${photos.length?`<h4>Фотографии</h4><div class="photo-grid">${photos.map(ph=>{
@@ -99,7 +100,7 @@
         }
 
         ${(isAssignedMechanic && p.status === 'MAINTENANCE') ? 
-          `<button class="secondary" onclick="window.NTS.finishJob('${esc(p.id)}')" style="background:var(--electric-blue); color:#101317;">Закончить работу</button>` : ''
+          `<button class="secondary" onclick="window.NTS.finishJob('${esc(p.id)}')" style="background:var(--accent); color:#101317;">Закончить работу</button>` : ''
         }
 
         <button class="secondary" onclick="window.NTS.editPassport('${esc(p.id)}')">Редактировать</button>
@@ -177,7 +178,6 @@
     $("loginBox").hidden=true;$("workspace").hidden=false;$("sessionTag").textContent="Авторизован";
     $("userEmail").textContent=profile.display_name||state.user.email;$("userRole").textContent=state.role;
     
-    // ЖЕСТКО СКРЫВАЕМ ВКЛАДКУ СОТРУДНИКИ ДЛЯ ВСЕХ, КРОМЕ АДМИНА
     $("teamTab").hidden = state.role !== "admin";
     $("teamTabContent").hidden = true; 
     
@@ -210,7 +210,6 @@
     }
   }
 
-  // НОВАЯ ФУНКЦИЯ: Завершение работы механиком
   async function finishJob(id) {
     if (!confirm("Закончить работу над этим мотором? Статус изменится на 'NTS ENGINE VERIFIED', а контроль качества будет отмечен автоматически.")) return;
     
@@ -339,10 +338,9 @@
     }
   }
 
-  // --- СОТРУДНИКИ ---
   async function createUser(ev) {
     ev.preventDefault();
-    if (state.role !== 'admin') return; // Блокировка на уровне клиента
+    if (state.role !== 'admin') return; 
 
     const email = $("newUserEmail").value.trim();
     const password = $("newUserPassword").value;
@@ -365,7 +363,7 @@
   }
 
   async function loadStaffList() {
-    if (state.role !== 'admin') return; // Блокировка на уровне клиента
+    if (state.role !== 'admin') return; 
 
     const { data, error } = await state.client.rpc('get_all_staff');
     
@@ -392,7 +390,7 @@
   }
 
   async function updateUserRole(userId, newRole) {
-    if (state.role !== 'admin') return; // Блокировка на уровне клиента
+    if (state.role !== 'admin') return; 
 
     const { error } = await state.client.from('staff_roles').update({ role: newRole }).eq('user_id', userId);
     if (error) {
@@ -488,8 +486,10 @@
     drawKV("Дата приёма", intakeDate);
     drawKV("Дата выдачи", issueDate);
     
-    y += 5; addText("Жалоба клиента / Описание:", 10, true); addText(p.description || "Не указана", 10);
-    addText("Выполненные работы (кратко):", 10, true); addText(p.public_summary || "Не указаны", 10);
+    // ИЗМЕНЕНО в PDF
+    y += 5; addText("Дефект / Жалоба клиента:", 10, true); addText(p.description || "Не указан", 10);
+    addText("Проведённые работы (кратко):", 10, true); addText(p.public_summary || "Не указаны", 10);
+    
     y += 5; drawLine();
 
     addText("Дефектовочный акт", 14, true); y += 2;
@@ -558,7 +558,6 @@
     document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("active",x===b));
     const tab = b.dataset.tab;
     
-    // Защита: не даем механику открыть вкладку team даже через консоль
     if (tab === "team" && state.role !== "admin") return;
 
     $("recordsTab").hidden = tab !== "records" && tab !== "queue";
